@@ -4,7 +4,7 @@ from datetime import datetime as dt
 def connect_to_database():
     """Connects to the database where the log in information is held."""
 
-    return sqlite3.connect("database/login_info.db")
+    return sqlite3.connect("data/login_info_database.db")
 
 def get_cursor(connection):
     """Creates a cursor for the database connection."""
@@ -58,6 +58,6 @@ if __name__ == "__main__":
         else:
             print("Login failed: incorrect password.")
     else:
-        # Deal with unique user problem elsewhere and assume there each user is unique:
+        # Assume each user is unique (only created 1!):
         print("Login failed: user not found.")
 
