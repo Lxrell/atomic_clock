@@ -1,5 +1,11 @@
+import ntplib
 import sqlite3
-from datetime import datetime as dt
+from time import ctime
+
+def get_time_from_server():
+    response = c.request('europe.pool.ntp.org', version=3)
+    
+    return ctime(response.tx_time)
 
 def connect_to_database():
     """Connects to the database where the log in information is held."""
@@ -54,6 +60,12 @@ def set_last_login_date(date):
 
 if __name__ == "__main__":
 
+    # Displaying current time using a time server:
+    # Open connection to server:
+    c = ntplib.NTPClient()
+    current_time = get_time_from_server()
+    print(current_time) # *Needs to be sent to frontend*
+
     # Connect to the database and get the cursor:
     connection = connect_to_database()
     cursor = get_cursor(connection)
@@ -62,8 +74,8 @@ if __name__ == "__main__":
     if not table_exists(cursor):
         create_table(connection, cursor)
 
-    user_attempt = input("Username: ")
-    password_attempt = input("Password: ")
+    user_attempt = input("Username: ") # *Needs to be retrieved from frontend*
+    password_attempt = input("Password: ") # *Needs to be retrieved from frontend*
 
     # Checking credentials given are valid:
     cursor.execute("""SELECT username, password FROM login_data where username=?""", [user_attempt])
@@ -73,10 +85,10 @@ if __name__ == "__main__":
         password = results[0][1]
         if password_attempt == password:
             print("Login successful.")
-            # Get current login time, format into <day> <month> <year> <hh:mm:ss>:
-            current_login_time = dt.now().strftime("%d %b %Y %H:%M:%S")
+            # Get current login time, using the time server:
+            current_login_time = get_time_from_server()
             last_login = get_last_login_date() 
-            print(f"Last logged in at {last_login}.")
+            print(f"Last logged in at {last_login}.") # *Needs to be sent to frontend*
             set_last_login_date(current_login_time)
         else:
             print("Login failed: incorrect password.")
