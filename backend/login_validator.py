@@ -58,6 +58,24 @@ def set_last_login_date(date):
     with open("data/last_login.txt", "w") as file:
         file.write(date)
 
+def login_attempt(cursor, user_attempt, password_attempt):
+    """Checks the given credentials match those in the database; if login successful will print last login date and set last login date for next time."""
+    cursor.execute("""SELECT username, password FROM login_data where username=?""", [user_attempt])
+    results = cursor.fetchall()
+    if len(results) > 0:
+        # I am sssuming each user is unique (only created 1 in database!):
+        # results is a list of tuples (username, password):
+        password = results[0][1]
+        if password_attempt == password:
+            # Get current login time, using the time server:
+            current_login_time = get_time_from_server()
+            last_login = get_last_login_date() 
+            set_last_login_date(current_login_time)
+            return f"Login successful. Last logged in at {last_login}." # *Needs to be sent to frontend*   
+        else:
+            return "Login failed: incorrect password."
+    else:
+        return "Login failed: user not found."
 
 if __name__ == "__main__":
 
@@ -75,25 +93,11 @@ if __name__ == "__main__":
     if not table_exists(cursor):
         create_table(connection, cursor)
 
+    # Using user input to simulate getting login details from frontend:
     user_attempt = input("Username: ") # *Needs to be retrieved from frontend*
     password_attempt = input("Password: ") # *Needs to be retrieved from frontend*
 
-    # Checking credentials given are valid:
-    cursor.execute("""SELECT username, password FROM login_data where username=?""", [user_attempt])
-    results = cursor.fetchall()
-    if len(results) > 0:
-        print("User found.")
-        password = results[0][1]
-        if password_attempt == password:
-            print("Login successful.")
-            # Get current login time, using the time server:
-            current_login_time = get_time_from_server()
-            last_login = get_last_login_date() 
-            print(f"Last logged in at {last_login}.") # *Needs to be sent to frontend*
-            set_last_login_date(current_login_time)
-        else:
-            print("Login failed: incorrect password.")
-    else:
-        # Assume each user is unique (only created 1!):
-        print("Login failed: user not found.")
+    # Attempt the login with the given credentials:
+    result = login_attempt(cursor, user_attempt, password_attempt)
+    print(result) # *Needs to be sent to frontend*
 
