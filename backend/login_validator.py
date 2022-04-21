@@ -31,6 +31,27 @@ def create_table(connection, cursor):
     VALUES (?,?)""", ["user123", "pa55w0rd"])
     connection.commit()
 
+def get_last_login_date():
+    """Gets the last login date from the last_login.txt file."""
+
+    with open("data/last_login.txt", "r") as file:
+        content = file.readlines()
+        # For a first time login, there won't be a date, but there will be one for subsequent logins:
+        if len(content) > 0:
+            date = content[0]
+        else:
+            # First login case - there is no date:
+            date = ""
+    
+    return date
+
+def set_last_login_date(date):
+    """Writes the last login date into the last_login.txt file, overriding the previous date present."""
+
+    with open("data/last_login.txt", "w") as file:
+        file.write(date)
+
+
 if __name__ == "__main__":
 
     # Connect to the database and get the cursor:
@@ -52,9 +73,11 @@ if __name__ == "__main__":
         password = results[0][1]
         if password_attempt == password:
             print("Login successful.")
-            # Get current time, format into <day> <month> <year> <hh:mm:ss>:
-            current_time = dt.now().strftime("%d %b %Y %H:%M:%S") 
-            print(f"Logged in at {current_time}.")
+            # Get current login time, format into <day> <month> <year> <hh:mm:ss>:
+            current_login_time = dt.now().strftime("%d %b %Y %H:%M:%S")
+            last_login = get_last_login_date() 
+            print(f"Last logged in at {last_login}.")
+            set_last_login_date(current_login_time)
         else:
             print("Login failed: incorrect password.")
     else:
