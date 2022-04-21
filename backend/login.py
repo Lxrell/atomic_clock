@@ -132,9 +132,3 @@ if __name__ == "__main__":
             print(f"The current time is {current_time}.") # *Needs to be sent to frontend*
         except ntplib.NTPException:
             print("No response was received from the server.")
-
-
-    
-
-    
-
