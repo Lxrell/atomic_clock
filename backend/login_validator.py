@@ -3,6 +3,7 @@ import sqlite3
 from time import ctime
 
 def get_time_from_server():
+    """Gets the current time from the time server using NTP."""
     response = c.request('europe.pool.ntp.org', version=3)
     
     return ctime(response.tx_time)
