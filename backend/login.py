@@ -12,11 +12,14 @@ class Login():
     def get_time_from_server(self):
         """Gets the current time from the time server using NTP."""
         
-        # Open connection to time server and get time:
-        c = ntplib.NTPClient()
-        response = c.request('europe.pool.ntp.org', version=3)
-        
-        return ctime(response.tx_time)
+        # Time server request may time out and raise an exception:
+        try:
+            # Open connection to time server and get time:
+            c = ntplib.NTPClient()
+            response = c.request('europe.pool.ntp.org', version=3)
+            return ctime(response.tx_time)
+        except ntplib.NTPException:
+            return "No response was received from the server."  
 
     def connect_to_database(self):
         """Connects to the database where the log in information is held."""
@@ -41,7 +44,7 @@ class Login():
         return True if len(result) > 0 else False
 
     def create_table(self, connection, cursor):
-        """Creates a table in the database for the login info and populates it."""
+        """Creates a table in the database for the login info."""
 
         self.connection = connection
         self.cursor = cursor
@@ -49,10 +52,18 @@ class Login():
         # Create table and define the fields:
         self.cursor.execute("""CREATE TABLE login_data
         (username TEXT, password TEXT)""")
+    
+    def populate_table(self, connection, cursor, username, password):
+        """Populates the database table with the given username and password."""
+
+        self.connection = connection
+        self.cursor = cursor
+        self.username = username
+        self.password = password
 
         #Add valid user login to database and save:
         self.cursor.execute("""INSERT INTO login_data
-        VALUES (?,?)""", ["user123", "pa55w0rd"])
+        VALUES (?,?)""", [self.username, self.password])
         self.connection.commit()
 
     def get_last_login_date(self):
@@ -87,7 +98,7 @@ class Login():
         self.cursor.execute("""SELECT username, password FROM login_data where username=?""", [self.user_attempt])
         results = self.cursor.fetchall()
         if len(results) > 0:
-            # I am sssuming each user is unique (only created 1 in database!):
+            # I am assuming each user is unique (only created 1 in database!):
             # results is a list of tuples (username, password):
             password = results[0][1]
             if self.password_attempt == password:
@@ -118,6 +129,7 @@ if __name__ == "__main__":
     # Check if there are any tables in the database and if not create one:
     if not new_login.table_exists(cursor):
         new_login.create_table(connection, cursor)
+        new_login.populate_table(connection, cursor, "user123", "pa55w0rd")
 
     # Attempt the login with the given credentials:
     result = new_login.login_attempt(cursor, user_attempt, password_attempt)
@@ -125,10 +137,5 @@ if __name__ == "__main__":
 
     # Displaying current time using a time server if we are logged in:
     if new_login.logged_in == True:
-        # Time server request may time out and raise an exception:
-        try:
-            # Get and display current time from server:
-            current_time = new_login.get_time_from_server()
-            print(f"The current time is {current_time}.") # *Needs to be sent to frontend*
-        except ntplib.NTPException:
-            print("No response was received from the server.")
+        current_time = new_login.get_time_from_server()
+        print(f"The current time is {current_time}.") # *Needs to be sent to frontend*
